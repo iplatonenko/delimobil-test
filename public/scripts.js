@@ -2,9 +2,13 @@ var Car = function(info, model) {
     this._info = info;
     this._model = model;
     this.placemark = new ymaps.Placemark(this._info.coordinates, {
-        iconCaption: this._model.name + ' ' + this._info.fuel +'%'
+        balloonContentBody: '<h3>' + this._model.name + '</h3><h5>Двигатель: ' + model.engine_power + ' л.с. (' + model.engine_capacity + 'л) Коробка' + model.transmission+'</h5><h5>Год выпуска: ' + model.year + '</h5><img src="img/' + this._model.name + ' Big.png"><p>Запас топлива: ' + this._info.fuel + '%</p>'
     }, {
-        preset: 'islands#greenDotIconWithCaption'
+        iconLayout: 'default#image',
+        iconImageHref: 'img/' + this._model.name + '.png',
+        iconImageSize: [63, 26],
+        iconImageOffset: [-32, -23],
+        
     }); 
 }
 
@@ -26,9 +30,9 @@ var Delimobil = function(elementId) {
     });
 
     this._cluster =  new ymaps.Clusterer({
-        preset: 'islands#invertedVioletClusterIcons',
+        preset: 'islands#darkOrangeClusterIcons',
         groupByCoordinates: false,
-        clusterDisableClickZoom: true,
+        clusterDisableClickZoom: false,
         clusterHideIconOnBalloonOpen: false,
         geoObjectHideIconOnBalloonOpen: false,
         gridSize: 100
