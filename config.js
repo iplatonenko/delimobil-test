@@ -3,10 +3,11 @@ module.exports = {
         cars: 'https://api.delitime.ru/api/v1/cars?with=fuel,model'
     },
     loops: {
-        cars: 10000
+        cars: 1005
     },
     http: {
         host: '127.0.0.1',
         port: 8080
-    }
+    },
+    public: './public/'
 };

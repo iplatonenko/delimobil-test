@@ -1,0 +1,8 @@
+html, body {
+    margin: 0px;
+    padding: 0px;
+    min-height: 100vh;
+}
+.map {
+    min-height: 100vh;
+}

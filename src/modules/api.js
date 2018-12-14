@@ -34,7 +34,7 @@ Api.prototype._request = function(url, callback) {
             try {
                 response = JSON.parse(data);
             } catch (err) {
-                console.log("Error: " + err.message);
+                console.log("Error: " + err.message, data);
                 callback(err, { success: false} );
                 return;
             }

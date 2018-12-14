@@ -1,4 +1,6 @@
-const   
+const
+    http = require('http'),
+    static = require('node-static'),
     Api = require('./modules/api'),
     Filter = require('./modules/filter'),
     Connections = require('./modules/connections');
@@ -11,9 +13,19 @@ const
  */
 var Delimobile = function(config) {
     this._config = config;
+
     this._api = new Api(this._config.api);
     this._filter = new Filter();
-    this._connections = new Connections(this._config.http);
+    
+
+    this._static = new static.Server(this._config.public);
+    this._server = http.createServer((req, res)=>{
+        req.addListener('end', ()=>{
+            this._static.serve(req, res);
+        }).resume();
+    });
+
+    this._connections = new Connections(this._server);
 
     this._init();
 }
@@ -52,10 +64,12 @@ Delimobile.prototype._init = function(){
         this._connections.sendRemoved(cars);
     });
 
-    // При запросе соединения списка моделей
-    this._connections.on('models',(callback)=>{
+
+
+    // При установке нового соединения отправляем список моделей
+    this._connections.on('connected',(callback)=>{
         // Получаем его
-        let models = this._filter.getModels();
+        let models = this._filter.getAllModels();
         // И передаем соединению
         callback(models);
     });
@@ -71,6 +85,7 @@ Delimobile.prototype._init = function(){
 
 Delimobile.prototype.start = function() {
     this._api.startCarsLoop(this._config.loops.cars);
+    this._server.listen(this._config.http);
 }
 
 module.exports = Delimobile;
