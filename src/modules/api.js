@@ -9,8 +9,8 @@ const
  */
 var Api = function(urls) {
     this._urls = urls;
-    this._loops = {
-        cars: false
+    this._loops = { 
+        cars: false // Выставляется в true, во время, запроса. Сделано для того, чтобы не был по таймеру запущен следующий запрос, если предыдущей не завершен
     }
 }
 
@@ -18,6 +18,7 @@ Api.prototype.__proto__ = Events.prototype;
 
 /**
  * Выполняет GET-запрос к API
+ * 
  * @param {string} url Ссылка на запрос
  * @param {function} callback Функция, которая будет выполнена по окончанию запроса, в которую будут переданы аргументы error и result
  */
@@ -47,13 +48,18 @@ Api.prototype._request = function(url, callback) {
     });
 }
 
+/**
+ * Метод выполняет запрос на получение списка автомобилей
+ * 
+ * @param {function} callback Функция, которая будет выполнена при успешном получении списка
+ */
 Api.prototype._getCars = function(callback) {
     this._request(this._urls.cars, (err, response)=>{
         if (err) {
             return;
         }
 
-        if (response && !response.success) {
+        if (!response.success) {
             console.log('Cars not success');
             return;
         }
@@ -62,7 +68,12 @@ Api.prototype._getCars = function(callback) {
     });
 }
 
-Api.prototype.startCarsLoop = function(period) {
+/**
+ * Метод запускает циклическое получение списка автомбилей
+ * 
+ * @param {number} period Период между запросами списков в миллисекундах
+ */
+Api.prototype.startLoops = function(period) {
     setInterval(()=>{
         if (this._loops.cars) {
             return;

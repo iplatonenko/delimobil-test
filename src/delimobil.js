@@ -14,19 +14,22 @@ const
 var Delimobile = function(config) {
     this._config = config;
 
-    this._api = new Api(this._config.api);
-    this._filter = new Filter();
-    
-
+    // Сервис отдачи статики
     this._static = new static.Server(this._config.public);
+
+    // HTTP-сервер
     this._server = http.createServer((req, res)=>{
         req.addListener('end', ()=>{
             this._static.serve(req, res);
         }).resume();
     });
 
+    // Модули сервиса
+    this._api = new Api(this._config.api);
+    this._filter = new Filter();
     this._connections = new Connections(this._server);
 
+    // Инициализируем подписку на события модулей
     this._init();
 }
 
@@ -43,39 +46,51 @@ Delimobile.prototype._init = function(){
 
     // При возникновении новых доступных моделей автомобилей
     this._filter.on('models', (models)=>{
+        if(models.length === 0) {
+            return;
+        }
         // Рассылаем о них информацию
-        this._connections.sendModels(models);
+        this._connections.broadcast('models', models);
     });
 
     // При появлении новых автомобилей
     this._filter.on('added', (cars) => {
+        if(cars.length === 0) {
+            return;
+        }
         // Рассылаем о них информацию
-        this._connections.sendAdded(cars);
+        this._connections.broadcast('added', cars);
     });
 
     // При обновлении данных об автомобилях
     this._filter.on('updated', (cars) => {
+        if(cars.length === 0) {
+            return;
+        }
         // Рассылаем информацию об обновлениях
-        this._connections.sendUpdated(cars);
+        this._connections.broadcast('updated', cars);
     });
 
     // При пропажи автомобиля из списка
-    this._filter.on('removed', (cars) => {
-        this._connections.sendRemoved(cars);
+    this._filter.on('removed', (ids) => {
+        if(ids.length === 0) {
+            return;
+        }
+        // Рассылаем информацию об удалениях
+        this._connections.broadcast('removed', ids);
     });
-
 
 
     // При установке нового соединения отправляем список моделей
-    this._connections.on('connected',(callback)=>{
-        // Получаем его
-        let models = this._filter.getAllModels();
-        // И передаем соединению
+    this._connections.on('connected', (callback)=>{
+        // Получаем список моделей авто
+        let models = this._filter.getModels();
+        // И передаем его соединению
         callback(models);
     });
 
-    // При запрсе автомобилей на участке карты
-    this._connections.on('bounds', (bounds, callback)=>{
+    // При запросе автомобилей на участке карты
+    this._connections.on('load', (bounds, callback)=>{
         // Получаем его
         let cars = this._filter.getCars(bounds);
         // И передаем соединению
@@ -83,8 +98,13 @@ Delimobile.prototype._init = function(){
     });
 }
 
+/**
+ * Метод запускает основные процессы сервиса:
+ *  - прослушивание HTTP и WebSocket запросов
+ *  - циклическое получение списка автомобилей
+ */
 Delimobile.prototype.start = function() {
-    this._api.startCarsLoop(this._config.loops.cars);
+    this._api.startLoops(this._config.loops.cars)
     this._server.listen(this._config.http);
 }
 

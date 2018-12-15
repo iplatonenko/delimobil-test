@@ -1,98 +1,61 @@
 const Events = require('events'),
-    WebSocket = require('ws');
+    WebSocket = require('ws'),
+    Connection = require('./connection');
 
 /**
- * Класс отвечающий за WebSoket-подключения пользователей
+ * Класс отвечающий за WebSocket-сервер и подключения пользователей
  * 
  * @param {object} opts 
  */
 var Connections = function(server){
+    this._connections = new Set();
+
     this._wsServer = new WebSocket.Server({ server: server });
-    this._init();
+    this._wsServer.on('connection', (ws)=>{
+        this._createConnection(ws);
+    });
+  
 }
 
 Connections.prototype.__proto__ = Events.prototype;
 
-Connections.prototype._init = function() {
-    this._wsServer.on('connection', (websocket)=>{
+/**
+ * Метод создает новый экземпляр соединения, сохраняет его в коллекцию
+ * и навешивает обработчики событий
+ * 
+ * @param {object} ws экземпляр объекта WebSocket
+ */
+Connections.prototype._createConnection = function(ws) {
+    let connection = new Connection(ws);
+    
+    // При запросе списка машин в координатах
+    connection.on('load', (bounds, callback) => {
+        // Отправляем событие запроса машин в координатах
+        this.emit('load', bounds, callback);
+    });
 
-        
-        websocket.on('message', (message)=>{
-            try {
-                var {event, data} = JSON.parse(message);
-            } catch(e) {
-                console.log('Не удалось разобрать запрос')
-            }
-            if (event) {
-                this._onEvent(websocket, event, data);
-            }
-        });
+    // При закрытии соединения
+    connection.on('close', (connection) => {
+        // Уничтожаем о нем информацию
+        this._connections.delete(connection);
+    });
+   
+    // Добавляем соединение в коллекцию
+    this._connections.add(connection);
 
-        this.emit('connected', (models)=>{
-            this._send(websocket, 'models', models);
-        });
+    // Отправляем событие о новом соединении
+    this.emit('connected', (models)=>{
+        connection.send('models', models);
     });
 }
 
-Connections.prototype._onEvent = function(websocket, event, data) {
-    if (event === 'bounds') {
-        websocket.bounds = data;
-        this.emit('bounds', data, (cars)=>{
-            this._send(websocket, 'loaded', cars)
-        })
-    }
-}
-
-Connections.prototype._send = function(websocket, event, data) {
-    if (websocket.readyState !== WebSocket.OPEN) {
-        return;
-    }
-
-    let message = {
-        event: event,
-        data: data
-    }
-    websocket.send(JSON.stringify(message));
-}
-
-Connections.prototype._broadcast = function(event, data) {
-    this._wsServer.clients.forEach((websocket) => {
-        this._send(websocket, event, data);
+/**
+ * Метод отправляем событие и данные по всем действующим соединениям
+ */
+Connections.prototype.broadcast = function(event, data) {
+    this._connections.forEach((connection) => {
+        connection.send(event, data);
     });
 }
-
-Connections.prototype.sendModels = function(models) {
-    if (Object.keys(models).length === 0) {
-        return;
-    }
-    this._broadcast('models', models);
-}
-
-Connections.prototype.sendAdded = function(added) {
-    if (Object.keys(added).length === 0) {
-        return;
-    }
-
-    this._broadcast('added', added);
-}
-
-Connections.prototype.sendUpdated = function(updated) {
-    if (Object.keys(updated).length === 0) {
-        return;
-    }
-
-    this._broadcast('updated', updated);
-}
-
-Connections.prototype.sendRemoved = function(removed) {
-    if (removed.length === 0) {
-        return;
-    }
-
-    this._broadcast('removed', removed);
-}
-
-
-Connections.prototype.__proto__ = Events.prototype;
 
 module.exports = Connections;
