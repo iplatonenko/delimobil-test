@@ -104,7 +104,6 @@ Delimobile.prototype._init = function(){
  *  - циклическое получение списка автомобилей
  */
 Delimobile.prototype.start = function() {
-    this._api.startLoops(this._config.loops.cars)
     this._server.listen(this._config.http);
 }
 

@@ -15,6 +15,7 @@
 
 ```bash
 git clone https://github.com/r1000ru/delimobil-test.git
+cd delimobil-test
 npm install
 npm start
 ```

@@ -12,6 +12,8 @@ var Api = function(urls) {
     this._loops = { 
         cars: false // Выставляется в true, во время, запроса. Сделано для того, чтобы не был по таймеру запущен следующий запрос, если предыдущей не завершен
     }
+
+    this._startLoops(1001)
 }
 
 Api.prototype.__proto__ = Events.prototype;
@@ -73,7 +75,7 @@ Api.prototype._getCars = function(callback) {
  * 
  * @param {number} period Период между запросами списков в миллисекундах
  */
-Api.prototype.startLoops = function(period) {
+Api.prototype._startLoops = function(period) {
     setInterval(()=>{
         if (this._loops.cars) {
             return;
