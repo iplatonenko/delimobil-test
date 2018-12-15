@@ -95,6 +95,11 @@ Connection.prototype.send = function(event, data) {
             data = this._filter(data, true);
     }
 
+    
+    if (data.length === 0) {
+        return;
+    }
+
     let message = {
         event: event,
         data: data
