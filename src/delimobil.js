@@ -89,10 +89,10 @@ Delimobile.prototype._init = function(){
         callback(models);
     });
 
-    // При запросе автомобилей на участке карты
-    this._connections.on('load', (bounds, callback)=>{
+    // При запросе автомобилей
+    this._connections.on('load', (callback)=>{
         // Получаем его
-        let cars = this._filter.getCars(bounds);
+        let cars = this._filter.getCars();
         // И передаем соединению
         callback(cars);
     });

@@ -1,7 +1,5 @@
 const
-    Events = require('events'),
-    utils = require('./utils');
-
+    Events = require('events');
 
 /**
  * Класс для экземпляра WebSocket подключения, отвечающий за дополнительную фильтрацию
@@ -54,7 +52,7 @@ Connection.prototype._onEvent = function(event, data) {
     if (event === 'bounds') {
         this._bounds = data;
         // Генерируем событие запроса автомобилей в координатах
-        this.emit('load', this._bounds, (cars)=>{
+        this.emit('load', (cars)=>{
             // И отправляем их пользователю
             this.send('loaded', cars);
         })
@@ -70,9 +68,8 @@ Connection.prototype._onEvent = function(event, data) {
  */
 Connection.prototype._filter = function(cars, updated) {
     var filtered = [];
-    
     cars.forEach((car)=>{
-        if (utils.inBounds(updated ? car.coordinates_old : car.coordinates, this._bounds)) {
+        if (car.inBounds(this._bounds, updated)) {
             filtered.push(car);
         }
     });
@@ -88,7 +85,14 @@ Connection.prototype._filter = function(cars, updated) {
 Connection.prototype.send = function(event, data) {
     // Для событий added и updated - отфильтруем данные
     switch(event) {
+
+        case 'loaded':
+            data = this._filter(data);
+            break;
         case 'added':
+            data = this._filter(data);
+            break;
+        case 'removed':
             data = this._filter(data);
             break;
         case 'updated':

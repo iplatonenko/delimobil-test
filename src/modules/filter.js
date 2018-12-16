@@ -1,13 +1,13 @@
 const 
     Events = require('events'),
-    utils = require('./utils');
+    Car = require('./car');
 
 /**
  * Класс отвечает за обработку информации о доступных автомбилях
  */
 var Filter = function() {
-    this._models = {};
-    this._cars = {};
+    this._models = new Map();
+    this._cars = new Map();
 }
 
 Filter.prototype.__proto__ = Events.prototype;
@@ -24,52 +24,42 @@ Filter.prototype._filter = function(cars, callback) {
     var updated = [];
     var removed = [];
 
-    // Ищем автомобили, которые пропали
-    let ids_current = Object.keys(this._cars);
-    let ids_loaded = cars.map((car) => { return '' + car.id });
     
-    ids_current.forEach((id) => {
-        if (ids_loaded.indexOf(id) === -1) {
-            delete(this._cars[id]);
-            removed.push(id);
+    let ids_loaded = cars.map((car) => { 
+        return car.id 
+    });
+    
+    // Ищем автомобили, которые пропали
+    this._cars.forEach((car, id) => {
+        if (!ids_loaded.includes(id)) {
+            removed.push(car);
+            this._cars.delete(id);
         }
     });
     
-    // Ищем новые модели, автомобили, изменнеия
-    for(let i in cars) {
-        let car = cars[i];
-        car.id = '' + car.id;
-        
-        // Если нет такой модели - добавляем
-        if (!this._models[car.model.name_full]) {
-            this._models[car.model.name_full] = car.model;
+    // Ищем новые модели, автомобили, изменения
+    cars.forEach((info)=>{
+
+        const car = new Car(info);
+
+        // Проверим, не является ли автомобиль - новой моделью
+        if (!this._models.has(car.model)) {
+            this._models.set(car.model, info.model);
             models.push(car.model);
         }
 
-        // Видоизменяем структуру данных автомобиля
-        car = {
-            id: car.id,
-            model: car.model.name_full,
-            fuel: parseInt(car.fuel),
-            coordinates: [car.lat, car.lon]
-        }
-
-        // Если такого автомобиля еще нет - добавляем и обрабатываем следующий
-        if (!this._cars[car.id]) {
-            this._cars[car.id] = car;
+        // Проверим, не является ли автомобиль новыми (не присутствующим ранее)
+        if (!this._cars.has(car.id)) {
+            this._cars.set(car.id, car);
             added.push(car);
-            continue;
+            return;
         }
 
-        // Если отличаются объем топлива, широта или долгота - произошло обновление данных 
-        if (this._cars[car.id].fuel !== car.fuel || this._cars[car.id].coordinates[0] !== car.coordinates[0] || this._cars[car.id].coordinates[1] !== car.coordinates[1]) {
-            // Фиксируем старые координаты, чтобы пройти фильтр при передаче пользователю, если новые координаты за пределами окна
-            car.coordinates_old = this._cars[car.id];
-            // И заменяем старую запись
-            this._cars[car.id] = car;
-            updated.push(car);
+        // Проверим, не обновились ли по автомобилю данные
+        if (this._cars.get(car.id).update(car)) {
+            updated.push(this._cars.get(car.id));
         }
-    }
+    })
 
     callback(models, added, updated, removed);
 }
@@ -94,25 +84,15 @@ Filter.prototype.update = function(cars) {
  * Метод возвращает информацию об известных на данный момент моделях автомобилей
  */
 Filter.prototype.getModels = function() {
-    return Object.values(this._models);
+    return Array.from(this._models.values());
 }
 
 /**
- * Метод возвращает информацию об автомобилях, расположенных в 
- * диапазоне координат верхнего левого и правого нижнего углов
+ * Метод возвращает информацию об автомобилях
  * 
- * @param {array} bounds Массив из двух объектов LatLng
  */
-Filter.prototype.getCars = function(bounds) {
-    var cars = [];
-    
-    for (let id in this._cars) {
-        if (utils.inBounds(this._cars[id].coordinates, bounds)) {
-            cars.push(this._cars[id]);
-        }
-    }
-
-    return cars;
+Filter.prototype.getCars = function() {
+    return Array.from(this._cars.values());
 }
 
 module.exports = Filter;

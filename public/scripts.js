@@ -112,7 +112,7 @@ Delimobil.prototype._onLoaded = function(cars) {
     this._onAdded(cars);
 
     // Потом удаляем те, которые остались, но их нет в текущей зарузке
-    var ids_loaded = cars.map((car) => { return car.id });
+    var ids_loaded = cars.map((car) => { return '' + car.id });
     var ids_current =  Object.keys(this._cars);
     
     ids_current.forEach((id)=>{
@@ -151,12 +151,12 @@ Delimobil.prototype._onUpdated = function(cars) {
  * При удалении авто
  */
 Delimobil.prototype._onRemoved = function(ids) {
-    ids.forEach((id)=>{
-        if (!this._cars[id]) {
+    ids.forEach((car)=>{
+        if (!this._cars[car.id]) {
             return;
         }
 
-        this._removeCar(id);
+        this._removeCar(car.id);
     });
 }
 
@@ -190,7 +190,7 @@ Delimobil.prototype._addCar = function(info) {
     var carPlacemark = new ymaps.Placemark(info.coordinates, {
         balloonContentHeader: model.name,
         balloonContentBody: 'Характеристики: ' + model.engine_power + ' л.с. (' + model.engine_capacity + 'л), ' + model.transmission + ', ' + model.year + '<br><img class="placemarc-car__img" src="img/' + model.name + ' Big.png">',
-        balloonContentFooter: 'Запас топлива: ' + info.fuel + '%'
+        balloonContentFooter: 'Запас топлива: ' + info.fuel
     }, {
         iconLayout: 'default#image',
         iconImageHref: 'img/' + model.name + '.png',
@@ -209,7 +209,7 @@ Delimobil.prototype._addCar = function(info) {
  */
 Delimobil.prototype._updateCar = function(info) {
     this._cars[info.id].geometry.setCoordinates(info.coordinates);
-    this._cars[info.id]
+    this._cars[info.id].properties.set('balloonContentFooter', info.fuel);
 }
 
 /**
